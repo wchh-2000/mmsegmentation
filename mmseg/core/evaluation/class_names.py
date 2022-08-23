@@ -125,7 +125,11 @@ def stare_classes():
     """stare class names for external use."""
     return ['background', 'vessel']
 
-
+def seg8_classes():
+    return ['water','transport', 'building','agricultural','grass', 'forest','barren','others']
+def seg8_palette():
+    return [[255, 255, 255], [255, 0, 0], [255, 255, 0], [0, 0, 255],
+               [159, 129, 183], [0, 255, 0], [255, 195, 128],[0, 0, 0]]
 def cityscapes_palette():
     """Cityscapes palette for external use."""
     return [[128, 64, 128], [244, 35, 232], [70, 70, 70], [102, 102, 156],
@@ -278,7 +282,8 @@ dataset_aliases = {
         'coco_stuff164k'
     ],
     'isaid': ['isaid', 'iSAID'],
-    'stare': ['stare', 'STARE']
+    'stare': ['stare', 'STARE'],
+    'seg8':['seg8']
 }
 
 
