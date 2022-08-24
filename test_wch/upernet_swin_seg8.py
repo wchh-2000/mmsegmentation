@@ -3,6 +3,7 @@ _base_ = [
     '/data/mmseg/configs/_base_/schedules/schedule_160k.py'
 ]
 # model settings
+workflow = [('train', 2), ('val', 1)]
 norm_cfg = dict(type='SyncBN', requires_grad=True)
 backbone_norm_cfg = dict(type='LN', requires_grad=True)
 model = dict(
@@ -92,7 +93,7 @@ img_norm_cfg = dict(
 crop_size = (512, 512)
 train_pipeline = [
     dict(type='LoadImageFromFile'),
-    dict(type='LoadAnnotations', reduce_zero_label=True),
+    dict(type='MyLoadAnnotations', reduce_zero_label=True),
     dict(type='Resize', img_scale=(2048, 512), ratio_range=(0.5, 2.0)),
     dict(type='RandomCrop', crop_size=crop_size, cat_max_ratio=0.75),
     dict(type='RandomFlip', prob=0.5),
@@ -125,12 +126,18 @@ data = dict(
         data_root=data_root,
         img_dir='train/images',
         ann_dir='train/labels',
+        val_mode=False,
+        k_fold_value=5,
+        k_fold_start=0,
         pipeline=train_pipeline),
     val=dict(
         type=dataset_type,
         data_root=data_root,
         img_dir='train/images',
         ann_dir='train/labels',
+        val_mode=True,
+        k_fold_value=5,
+        k_fold_start=0,
         pipeline=test_pipeline),
     test=dict(
         type=dataset_type,
