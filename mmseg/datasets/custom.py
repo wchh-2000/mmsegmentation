@@ -71,6 +71,9 @@ class CustomDataset(Dataset):
         file_client_args (dict): Arguments to instantiate a FileClient.
             See :class:`mmcv.fileio.FileClient` for details.
             Defaults to ``dict(backend='disk')``.
+        val_mode(bool):如果为True，生成验证集。
+        k_fold_value：几折交叉验证,
+        k_fold_start：验证集的起始索引
     """
 
     CLASSES = None
@@ -91,6 +94,9 @@ class CustomDataset(Dataset):
                  classes=None,
                  palette=None,
                  gt_seg_map_loader_cfg=None,
+                 val_mode=False,
+                 k_fold_value=5,
+                 k_fold_start=0,
                  file_client_args=dict(backend='disk')):
         self.pipeline = Compose(pipeline)
         self.img_dir = img_dir
@@ -103,6 +109,7 @@ class CustomDataset(Dataset):
         self.ignore_index = ignore_index
         self.reduce_zero_label = reduce_zero_label
         self.label_map = None
+        self.val_mode = val_mode
         self.CLASSES, self.PALETTE = self.get_classes_and_palette(
             classes, palette)
         self.gt_seg_map_loader = LoadAnnotations(
@@ -129,6 +136,14 @@ class CustomDataset(Dataset):
         self.img_infos = self.load_annotations(self.img_dir, self.img_suffix,
                                                self.ann_dir,
                                                self.seg_map_suffix, self.split)
+
+        val_size = len(self.img_infos) // k_fold_value
+        val_start_idx = k_fold_start * val_size
+        if val_mode:
+            self.img_infos = self.img_infos[val_start_idx:val_start_idx + val_size]
+        else:
+            self.img_infos = self.img_infos[:val_start_idx] + self.img_infos[val_start_idx + val_size:]
+            
 
     def __len__(self):
         """Total number of samples of data."""
