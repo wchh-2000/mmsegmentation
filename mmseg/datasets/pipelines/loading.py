@@ -203,7 +203,7 @@ class MyLoadAnnotations(object):
         img_bytes = self.file_client.get(filename)
         gt_semantic_seg = mmcv.imfrombytes(
             img_bytes, flag='unchanged',
-            backend=self.imdecode_backend).squeeze().astype(np.uint8)
+            backend=self.imdecode_backend).squeeze().astype(np.int32)
         # modify if custom classes
         if results.get('label_map', None) is not None:
             # Add deep copy to solve bug of repeatedly
@@ -212,20 +212,22 @@ class MyLoadAnnotations(object):
             gt_semantic_seg_copy = gt_semantic_seg.copy()
             for old_id, new_id in results['label_map'].items():
                 gt_semantic_seg[gt_semantic_seg_copy == old_id] = new_id
+                
         # rough classes
-        for i in range(8):
+        for i in range(9):
             gt_semantic_seg[gt_semantic_seg // 100 == i] = i
         # fine classes
         # for i in range(1, 17):
         #     gt_semantic_seg[gt_semantic_seg % 100 == i] = i
         # gt_semantic_seg[gt_semantic_seg % 100 == 17] = 0
+
         # reduce zero_label
         if self.reduce_zero_label:
             # avoid using underflow conversion
             gt_semantic_seg[gt_semantic_seg == 0] = 255
             gt_semantic_seg = gt_semantic_seg - 1
             gt_semantic_seg[gt_semantic_seg == 254] = 255
-        results['gt_semantic_seg'] = gt_semantic_seg
+        results['gt_semantic_seg'] = gt_semantic_seg.astype(np.uint8)
         results['seg_fields'].append('gt_semantic_seg')
         return results
 

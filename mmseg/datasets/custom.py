@@ -12,7 +12,7 @@ from torch.utils.data import Dataset
 from mmseg.core import eval_metrics, intersect_and_union, pre_eval_to_metrics
 from mmseg.utils import get_root_logger
 from .builder import DATASETS
-from .pipelines import Compose, LoadAnnotations
+from .pipelines import Compose, LoadAnnotations, MyLoadAnnotations
 
 
 @DATASETS.register_module()
@@ -112,8 +112,8 @@ class CustomDataset(Dataset):
         self.val_mode = val_mode
         self.CLASSES, self.PALETTE = self.get_classes_and_palette(
             classes, palette)
-        self.gt_seg_map_loader = LoadAnnotations(
-        ) if gt_seg_map_loader_cfg is None else LoadAnnotations(
+        self.gt_seg_map_loader = MyLoadAnnotations(
+        ) if gt_seg_map_loader_cfg is None else MyLoadAnnotations(
             **gt_seg_map_loader_cfg)
 
         self.file_client_args = file_client_args

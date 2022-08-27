@@ -2,6 +2,10 @@ _base_ = [
     '/data/mmseg/configs/_base_/default_runtime.py',
     '/data/mmseg/configs/_base_/schedules/schedule_160k.py'
 ]
+
+# checkpoint_config = dict(by_epoch=False, interval=16000)
+# evaluation = dict(interval=16000, metric='mIoU', pre_eval=True)
+ignore_index = 0
 # model settings
 workflow = [('train', 2), ('val', 1)]
 norm_cfg = dict(type='SyncBN', requires_grad=True)
@@ -36,9 +40,10 @@ model = dict(
         pool_scales=(1, 2, 3, 6),
         channels=512,
         dropout_ratio=0.1,
-        num_classes=8,
+        num_classes=9,
         norm_cfg=norm_cfg,
         align_corners=False,
+        ignore_index=ignore_index,
         loss_decode=dict(
             type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0)),
     auxiliary_head=dict(
@@ -49,9 +54,10 @@ model = dict(
         num_convs=1,
         concat_input=False,
         dropout_ratio=0.1,
-        num_classes=8,
+        num_classes=9,
         norm_cfg=norm_cfg,
         align_corners=False,
+        ignore_index=ignore_index,
         loss_decode=dict(
             type='CrossEntropyLoss', use_sigmoid=False, loss_weight=0.4)),
     # model training and testing settings
@@ -93,13 +99,13 @@ img_norm_cfg = dict(
 crop_size = (512, 512)
 train_pipeline = [
     dict(type='LoadImageFromFile'),
-    dict(type='MyLoadAnnotations', reduce_zero_label=True),
-    dict(type='Resize', img_scale=(2048, 512), ratio_range=(0.5, 2.0)),
+    dict(type='MyLoadAnnotations'),
+    dict(type='Resize', img_scale=(512, 512), ratio_range=(0.5, 2.0)),
     dict(type='RandomCrop', crop_size=crop_size, cat_max_ratio=0.75),
     dict(type='RandomFlip', prob=0.5),
     dict(type='PhotoMetricDistortion'),
     dict(type='Normalize', **img_norm_cfg),
-    dict(type='Pad', size=crop_size, pad_val=0, seg_pad_val=255),
+    dict(type='Pad', size=crop_size, pad_val=0, seg_pad_val=ignore_index),
     dict(type='DefaultFormatBundle'),
     dict(type='Collect', keys=['img', 'gt_semantic_seg']),
 ]
@@ -107,12 +113,12 @@ test_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(
         type='MultiScaleFlipAug',
-        img_scale=(1024, 1024),
+        img_scale=(512, 512),
         # img_ratios=[0.5, 0.75, 1.0, 1.25, 1.5, 1.75],
         flip=False,
         transforms=[
             dict(type='Resize', keep_ratio=True),
-            dict(type='RandomFlip'),
+            # dict(type='RandomFlip'),
             dict(type='Normalize', **img_norm_cfg),
             dict(type='ImageToTensor', keys=['img']),
             dict(type='Collect', keys=['img']),
@@ -129,6 +135,7 @@ data = dict(
         val_mode=False,
         k_fold_value=5,
         k_fold_start=0,
+        ignore_index=ignore_index,
         pipeline=train_pipeline),
     val=dict(
         type=dataset_type,
@@ -138,9 +145,12 @@ data = dict(
         val_mode=True,
         k_fold_value=5,
         k_fold_start=0,
+        ignore_index=ignore_index,
         pipeline=test_pipeline),
     test=dict(
         type=dataset_type,
         data_root=data_root,
         img_dir='testA/images',
+        val_mode=True,
+        k_fold_value=1,
         pipeline=test_pipeline))

@@ -16,17 +16,17 @@ class Seg8Dataset(CustomDataset):
     ``reduce_zero_label`` should be set to True. The ``img_suffix`` and
     ``seg_map_suffix`` are both fixed to '.png'.
     """
-    CLASSES = ('water','transport', 'building','agricultural','grass', 'forest','barren','others'
+    CLASSES = ('background', 'water','transport', 'building','agricultural','grass', 'forest','barren','others'
                )
 
-    PALETTE = [[255, 255, 255], [255, 0, 0], [255, 255, 0], [0, 0, 255],
-               [159, 129, 183], [0, 255, 0], [255, 195, 128],[0, 0, 0]]
+    PALETTE = [[0, 60, 100], [255, 255, 255], [255, 0, 0], [255, 255, 0], [0, 0, 255],
+               [159, 129, 183], [0, 255, 0], [255, 195, 128], [0, 0, 0]]
 
     def __init__(self, **kwargs):
         super(Seg8Dataset, self).__init__(
             img_suffix='.tif',
             seg_map_suffix='.png',
-            reduce_zero_label=True,
+            reduce_zero_label=False,
             **kwargs)
 
     def results2img(self, results, imgfile_prefix, indices=None):

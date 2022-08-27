@@ -1,5 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import os
 import os.path as osp
+import shutil
 import warnings
 
 import torch.distributed as dist
@@ -48,8 +50,14 @@ class EvalHook(_EvalHook):
             return
 
         from mmseg.apis import single_gpu_test
+
+        save_eval_path = '/data/val_visualization'
+        if osp.exists(save_eval_path):
+            shutil.rmtree(save_eval_path)
+        os.mkdirs(save_eval_path)
+
         results = single_gpu_test(
-            runner.model, self.dataloader, show=False, pre_eval=self.pre_eval)
+            runner.model, self.dataloader, out_dir=save_eval_path, show=False, pre_eval=self.pre_eval)
         self.latest_results = results
         runner.log_buffer.clear()
         runner.log_buffer.output['eval_iter_num'] = len(self.dataloader)
