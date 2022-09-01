@@ -21,6 +21,7 @@ backbone_norm_cfg = dict(type='LN', requires_grad=True)
 checkpoint_file=''#"/data/checkpoints_convnext/swin_base_patch4_window7_224_22k.pth"
 model = dict(
     type='EncoderDecoder',
+    pretrained=None,
     backbone=dict(
         type='SwinTransformer',
         pretrain_img_size=224,
@@ -78,7 +79,7 @@ model = dict(
 optimizer = dict(
     _delete_=True,
     type='AdamW',
-    lr=0.00006,
+    lr=0.00006,#2e-4
     betas=(0.9, 0.999),
     weight_decay=0.01,
     paramwise_cfg=dict(
@@ -86,6 +87,7 @@ optimizer = dict(
             'absolute_pos_embed': dict(decay_mult=0.),
             'relative_position_bias_table': dict(decay_mult=0.),
             'norm': dict(decay_mult=0.)
+            #'head':dict(lr_mult=10.0)#convnext
         }))
 
 lr_config = dict(
@@ -127,7 +129,7 @@ albumentations = [
 size = 512
 train_pipeline = [
     dict(type='LoadImageFromFile'),
-    dict(type='LoadAnnotations'),
+    dict(type='MyLoadAnnotations'),
     dict(type='Resize', img_scale=(size, size), ratio_range=(0.5, 2.0)),
     dict(type='RandomCrop', crop_size=(size, size), cat_max_ratio=0.75),
     dict(type='Albu', transforms=albumentations),
@@ -139,7 +141,7 @@ train_pipeline = [
         mean=[123.675, 116.28, 103.53],
         std=[58.395, 57.12, 57.375],
         to_rgb=True),
-    dict(type='Pad', size=(size, size), pad_val=0, seg_pad_val=255),
+    dict(type='Pad', size=(size, size), pad_val=0, seg_pad_val=ignore_index),
     dict(type='DefaultFormatBundle'),
     dict(type='Collect', keys=['img', 'gt_semantic_seg'])
 ]
