@@ -54,7 +54,7 @@ class EvalHook(_EvalHook):
         save_eval_path = '/data/val_visualization'
         if osp.exists(save_eval_path):
             shutil.rmtree(save_eval_path)
-        os.mkdirs(save_eval_path)
+        os.makedirs(save_eval_path)
 
         results = single_gpu_test(
             runner.model, self.dataloader, out_dir=save_eval_path, show=False, pre_eval=self.pre_eval)

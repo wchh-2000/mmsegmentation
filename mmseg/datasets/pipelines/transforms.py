@@ -5,9 +5,9 @@ import mmcv
 import numpy as np
 from mmcv.utils import deprecated_api_warning, is_tuple_of
 from numpy import random
+import albumentations as A
 
 from ..builder import PIPELINES
-
 
 @PIPELINES.register_module()
 class ResizeToMultiple(object):
@@ -1333,3 +1333,27 @@ class RandomMosaic(object):
         repr_str += f'pad_val={self.pad_val}, '
         repr_str += f'seg_pad_val={self.pad_val})'
         return repr_str
+
+# @PIPELINES.register_module()
+# class Albu(object):
+
+#     @deprecated_api_warning({'flip_ratio': 'prob'}, cls_name='RandomFlip')
+#     def __init__(self, transforms=None):
+#         new_transforms = []
+#         for t in transforms:
+#             new_transforms.append(self.getTransform(**t))
+#         self.transforms = A.Compose(transforms=new_transforms)
+
+#     def getTransform(self, type=None, transforms=None, **args):
+#         if issubclass(getattr(A, type), A.BaseCompose):
+#             if transforms is None:
+#                 raise ValueError('transforms is not set')
+#             new_transforms = []
+#             for t in transforms:
+#                 new_transforms.append(self.getTransform(**t))
+#             return getattr(A, type)(transforms=new_transforms, **args)
+#         return getattr(A, type)(**args)
+        
+#     def __call__(self, results):
+#         results['img'] = self.transforms(image=results['img'])['image']
+#         return results
