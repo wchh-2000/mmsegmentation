@@ -12,9 +12,7 @@ from torch.utils.data import Dataset
 from mmseg.core import eval_metrics, intersect_and_union, pre_eval_to_metrics
 from mmseg.utils import get_root_logger
 from .builder import DATASETS
-from .pipelines import Compose, LoadAnnotations
-from PIL import Image
-
+from .pipelines import Compose, LoadAnnotations#, MyLoadAnnotations
 
 
 @DATASETS.register_module()
@@ -44,7 +42,7 @@ class CustomDataset(Dataset):
     ``xxx{img_suffix}`` and ``xxx{seg_map_suffix}`` (extension is also included
     in the suffix). If split is given, then ``xxx`` is specified in txt file.
     Otherwise, all files in ``img_dir/``and ``ann_dir`` will be loaded.
-    Please refer to ``docs/tutorials/new_dataset.md`` for more details.
+    Please refer to ``docs/en/tutorials/new_dataset.md`` for more details.
 
 
     Args:
@@ -70,6 +68,9 @@ class CustomDataset(Dataset):
             Default: None
         gt_seg_map_loader_cfg (dict, optional): build LoadAnnotations to
             load gt for evaluation, load from disk by default. Default: None.
+        file_client_args (dict): Arguments to instantiate a FileClient.
+            See :class:`mmcv.fileio.FileClient` for details.
+            Defaults to ``dict(backend='disk')``.
         val_mode(bool):如果为True，生成验证集。
         k_fold_value：几折交叉验证,
         k_fold_start：验证集的起始索引
@@ -95,7 +96,8 @@ class CustomDataset(Dataset):
                  gt_seg_map_loader_cfg=None,
                  val_mode=False,
                  k_fold_value=10,
-                 k_fold_start=0):
+                 k_fold_start=0,
+                 file_client_args=dict(backend='disk')):
         self.pipeline = Compose(pipeline)
         self.img_dir = img_dir
         self.img_suffix = img_suffix
@@ -113,6 +115,9 @@ class CustomDataset(Dataset):
         self.gt_seg_map_loader = LoadAnnotations(
         ) if gt_seg_map_loader_cfg is None else LoadAnnotations(
             **gt_seg_map_loader_cfg)
+
+        self.file_client_args = file_client_args
+        self.file_client = mmcv.FileClient.infer_client(self.file_client_args)
 
         if test_mode:
             assert self.CLASSES is not None, \
@@ -163,16 +168,21 @@ class CustomDataset(Dataset):
 
         img_infos = []
         if split is not None:
-            with open(split) as f:
-                for line in f:
-                    img_name = line.strip()
-                    img_info = dict(filename=img_name + img_suffix)
-                    if ann_dir is not None:
-                        seg_map = img_name + seg_map_suffix
-                        img_info['ann'] = dict(seg_map=seg_map)
-                    img_infos.append(img_info)
+            lines = mmcv.list_from_file(
+                split, file_client_args=self.file_client_args)
+            for line in lines:
+                img_name = line.strip()
+                img_info = dict(filename=img_name + img_suffix)
+                if ann_dir is not None:
+                    seg_map = img_name + seg_map_suffix
+                    img_info['ann'] = dict(seg_map=seg_map)
+                img_infos.append(img_info)
         else:
-            for img in mmcv.scandir(img_dir, img_suffix, recursive=True):
+            for img in self.file_client.list_dir_or_file(
+                    dir_path=img_dir,
+                    list_dir=False,
+                    suffix=img_suffix,
+                    recursive=True):
                 img_info = dict(filename=img)
                 if ann_dir is not None:
                     seg_map = img.replace(img_suffix, seg_map_suffix)
@@ -252,9 +262,9 @@ class CustomDataset(Dataset):
         self.pre_pipeline(results)
         return self.pipeline(results)
 
-    #  def format_results(self, results, imgfile_prefix, indices=None, **kwargs):
-    #      """Place holder to format result to dataset specific output."""
-    #      raise NotImplementedError
+    def format_results(self, results, imgfile_prefix, indices=None, **kwargs):
+        """Place holder to format result to dataset specific output."""
+        raise NotImplementedError
 
     def get_gt_seg_map_by_idx(self, index):
         """Get one ground truth segmentation map for evaluation."""
@@ -303,9 +313,18 @@ class CustomDataset(Dataset):
         for pred, index in zip(preds, indices):
             seg_map = self.get_gt_seg_map_by_idx(index)
             pre_eval_results.append(
-                intersect_and_union(pred, seg_map, len(self.CLASSES),
-                                    self.ignore_index, self.label_map,
-                                    self.reduce_zero_label))
+                intersect_and_union(
+                    pred,
+                    seg_map,
+                    len(self.CLASSES),
+                    self.ignore_index,
+                    # as the labels has been converted when dataset initialized
+                    # in `get_palette_for_custom_classes ` this `label_map`
+                    # should be `dict()`, see
+                    # https://github.com/open-mmlab/mmsegmentation/issues/1415
+                    # for more ditails
+                    label_map=dict(),
+                    reduce_zero_label=self.reduce_zero_label))
 
         return pre_eval_results
 
@@ -366,12 +385,20 @@ class CustomDataset(Dataset):
 
         elif palette is None:
             if self.PALETTE is None:
+                # Get random state before set seed, and restore
+                # random state later.
+                # It will prevent loss of randomness, as the palette
+                # may be different in each iteration if not specified.
+                # See: https://github.com/open-mmlab/mmdetection/issues/5844
+                state = np.random.get_state()
+                np.random.seed(42)
+                # random palette
                 palette = np.random.randint(0, 255, size=(len(class_names), 3))
+                np.random.set_state(state)
             else:
                 palette = self.PALETTE
 
         return palette
-
 
     def evaluate(self,
                  results,
@@ -414,7 +441,7 @@ class CustomDataset(Dataset):
                 num_classes,
                 self.ignore_index,
                 metric,
-                label_map=self.label_map,
+                label_map=dict(),
                 reduce_zero_label=self.reduce_zero_label)
         # test a list of pre_eval_results
         else:
@@ -473,84 +500,3 @@ class CustomDataset(Dataset):
             })
 
         return eval_results
-
-    def results2img(self, results, imgfile_prefix, to_label_id, indices=None):
-        """Write the segmentation results to images.
-
-        Args:
-            results (list[list | tuple | ndarray]): Testing results of the
-                dataset.
-            imgfile_prefix (str): The filename prefix of the png files.
-                If the prefix is "somepath/xxx",
-                the png files will be named "somepath/xxx.png".
-            to_label_id (bool): whether convert output to label_id for
-                submission.
-            indices (list[int], optional): Indices of input results,
-                if not set, all the indices of the dataset will be used.
-                Default: None.
-
-        Returns:
-            list[str: str]: result txt files which contains corresponding
-            semantic segmentation images.
-        """
-        if indices is None:
-            indices = list(range(len(self)))
-
-        mmcv.mkdir_or_exist(imgfile_prefix)
-        result_files = []
-        for result, idx in zip(results, indices):
-            #  if to_label_id:
-            #      result = self._convert_to_label_id(result)
-            filename = self.img_infos[idx]['filename']
-            #  basename = osp.splitext(osp.basename(filename))[0]
-            basename = osp.basename(filename).split(self.img_suffix)[0]
-
-            png_filename = osp.join(imgfile_prefix, f'{basename}{self.seg_map_suffix}')
-
-            output = Image.fromarray(result.astype(np.uint8))
-            #  output = Image.fromarray(result.astype(np.uint8)).convert('P')
-            #  import cityscapesscripts.helpers.labels as CSLabels
-            #  palette = np.zeros((len(CSLabels.id2label), 3), dtype=np.uint8)
-            #  for label_id, label in CSLabels.id2label.items():
-            #      palette[label_id] = label.color
-
-            #  output.putpalette(palette)
-            output.save(png_filename)
-            result_files.append(png_filename)
-
-        return result_files
-
-    def format_results(self,
-                       results,
-                       imgfile_prefix,
-                       to_label_id=True,
-                       indices=None):
-        """Format the results into dir (standard format for Cityscapes
-        evaluation).
-
-        Args:
-            results (list): Testing results of the dataset.
-            imgfile_prefix (str): The prefix of images files. It
-                includes the file path and the prefix of filename, e.g.,
-                "a/b/prefix".
-            to_label_id (bool): whether convert output to label_id for
-                submission. Default: False
-            indices (list[int], optional): Indices of input results,
-                if not set, all the indices of the dataset will be used.
-                Default: None.
-
-        Returns:
-            tuple: (result_files, tmp_dir), result_files is a list containing
-                the image paths, tmp_dir is the temporal directory created
-                for saving json/png files when img_prefix is not specified.
-        """
-        if indices is None:
-            indices = list(range(len(self)))
-
-        assert isinstance(results, list), 'results must be a list.'
-        assert isinstance(indices, list), 'indices must be a list.'
-
-        result_files = self.results2img(results, imgfile_prefix, to_label_id,
-                                        indices)
-
-        return result_files
