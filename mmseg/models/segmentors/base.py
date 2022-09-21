@@ -137,7 +137,12 @@ class BaseSegmentor(BaseModule, metaclass=ABCMeta):
         """
         losses = self(**data_batch)
         loss, log_vars = self._parse_losses(losses)
-
+        
+        # imgIds=[d['ori_filename'][:-4] for d in data_batch['img_metas']]
+        # with open("/data/logits/ids.txt","a") as f:
+        #     for i in imgIds:
+        #         f.write(i+' ')
+        #     f.write('\n')
         outputs = dict(
             loss=loss,
             log_vars=log_vars,

@@ -9,7 +9,7 @@ from mmseg.core import build_pixel_sampler
 from mmseg.ops import resize
 from ..builder import build_loss
 from ..losses import accuracy
-
+# import numpy as np
 
 class BaseDecodeHead(BaseModule, metaclass=ABCMeta):
     """Base class for BaseDecodeHead.
@@ -105,6 +105,7 @@ class BaseDecodeHead(BaseModule, metaclass=ABCMeta):
         else:
             self.dropout = None
         self.fp16_enabled = False
+        # self.iter_num=0#for saving logits per iter
 
     def extra_repr(self):
         """Extra repr."""
@@ -200,7 +201,7 @@ class BaseDecodeHead(BaseModule, metaclass=ABCMeta):
         Returns:
             dict[str, Tensor]: a dictionary of loss components
         """
-        seg_logits = self(inputs)
+        seg_logits = self.forward(inputs)
         losses = self.losses(seg_logits, gt_semantic_seg)
         return losses
 
@@ -232,11 +233,17 @@ class BaseDecodeHead(BaseModule, metaclass=ABCMeta):
     def losses(self, seg_logit, seg_label):
         """Compute segmentation loss."""
         loss = dict()
+        # size=seg_logit.shape[2]
         seg_logit = resize(
             input=seg_logit,
             size=seg_label.shape[2:],
             mode='bilinear',
             align_corners=self.align_corners)
+        # if size==128:#UperHead
+        #     l=seg_logit.cpu().detach().numpy().astype(np.float16)
+        #     fname='/data/logits/save/'+str(self.iter_num)+'.npy'
+        #     np.save(fname,l)
+        #     self.iter_num+=1
         if self.sampler is not None:
             seg_weight = self.sampler.sample(seg_logit, seg_label)
         else:
