@@ -115,6 +115,10 @@ data
 *.log.json
 work_dirs/
 mmseg/.mim
+*.npy
+loss.png
+acc.png
+lr.png
 
 # Pytorch
 *.pth
