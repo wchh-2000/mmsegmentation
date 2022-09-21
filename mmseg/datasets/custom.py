@@ -94,7 +94,8 @@ class CustomDataset(Dataset):
                  palette=None,
                  gt_seg_map_loader_cfg=None,
                  val_mode=False,
-                 k_fold_value=10,
+                 k_fold_use=True,
+                 k_fold_value=5,
                  k_fold_start=0):
         self.pipeline = Compose(pipeline)
         self.img_dir = img_dir
@@ -131,13 +132,13 @@ class CustomDataset(Dataset):
         self.img_infos = self.load_annotations(self.img_dir, self.img_suffix,
                                                self.ann_dir,
                                                self.seg_map_suffix, self.split)
-
-        val_size = len(self.img_infos) // k_fold_value
-        val_start_idx = k_fold_start * val_size
-        if val_mode:
-            self.img_infos = self.img_infos[val_start_idx:val_start_idx + val_size]
-        else:
-            self.img_infos = self.img_infos[:val_start_idx] + self.img_infos[val_start_idx + val_size:]
+        if k_fold_use:
+            val_size = len(self.img_infos) // k_fold_value
+            val_start_idx = k_fold_start * val_size
+            if val_mode:
+                self.img_infos = self.img_infos[val_start_idx:val_start_idx + val_size]
+            else:
+                self.img_infos = self.img_infos[:val_start_idx] + self.img_infos[val_start_idx + val_size:]
             
 
     def __len__(self):
