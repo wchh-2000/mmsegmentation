@@ -12,7 +12,8 @@ from mmcv.cnn.utils import revert_sync_batchnorm
 from mmcv.runner import (get_dist_info, init_dist, load_checkpoint,
                          wrap_fp16_model)
 from mmcv.utils import DictAction
-
+import sys
+sys.path.append("/data/mmseg")
 from mmseg import digit_version
 from mmseg.apis import multi_gpu_test, single_gpu_test
 from mmseg.datasets import build_dataloader, build_dataset
@@ -206,7 +207,7 @@ def main():
     })
     test_loader_cfg = {
         **loader_cfg,
-        'samples_per_gpu': 1,
+        'samples_per_gpu': 1,#cfg.data.get("samples_per_gpu")
         'shuffle': False,  # Not shuffle by default
         **cfg.data.get('test_dataloader', {})
     }
