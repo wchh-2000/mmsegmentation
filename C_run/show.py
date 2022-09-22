@@ -66,7 +66,7 @@ def show_train(dir,fname,val=False,interval=50,showname=None):
         plt.legend()
         plt.savefig(dir+'acc.png')
 
-show_train("work_dirs/convnext_l_lova_aug/","20220920_145634.log.json",val=False \
+show_train("/data/mmseg/C_work_dirs/convnext_l_lova_aug/","20220921_161638.log.json",val=False \
     ,interval=50)#,showname="decode.loss_lova")
 def compare(dir,f1,f2,interval=50):
     acc0=[]

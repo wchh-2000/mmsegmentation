@@ -1,8 +1,4 @@
-num_classes=9
-# weight=[0.04417673954178031, 0.08010399192490611, 0.0458712730801838, 0.2420259748482717, 0.08080186371961452,\
-#      0.07380648992060318, 0.38743652293966024, 0.038103332851424435, 0.007673811173555707]
-weight=[0.0442259779697271, 0.08023266068873942, 0.04525594830577823, 0.24029939494877162, 0.08087339707209144, \
-        0.07392243161805627, 0.38702276311794526, 0.039939851330440285, 0.008227574948450351]
+num_classes=9        
 model = dict(
     type='EncoderDecoder',
     pretrained='/data/checkpoints/convnext_large_22k_224.pth',
@@ -25,9 +21,9 @@ model = dict(
         norm_cfg=dict(type='SyncBN', requires_grad=True),
         align_corners=False,
         loss_decode=[
-            dict(type='CrossEntropyLoss', use_sigmoid=False, loss_weight=0.5,class_weight=weight),            
+            dict(type='CrossEntropyLoss', use_sigmoid=False, loss_weight=0.5),            
             dict(type='LovaszLoss', loss_name='loss_lova',
-            reduction='none', loss_weight=0.5,class_weight=weight)]
+            reduction='none', loss_weight=0.5)]
         ),
     auxiliary_head=dict(
         type='FCNHead',
@@ -41,7 +37,7 @@ model = dict(
         norm_cfg=dict(type='SyncBN', requires_grad=True),
         align_corners=False,
         loss_decode=dict(
-            type='CrossEntropyLoss', use_sigmoid=False, loss_weight=0.4,class_weight=weight)),
+            type='CrossEntropyLoss', use_sigmoid=False, loss_weight=0.4)),
     train_cfg=dict(),
     test_cfg=dict(mode='whole'))
 
@@ -54,7 +50,9 @@ albumentations = [#改过
         scale_limit=0.2,
         rotate_limit=20,
         p=0.5),
-    dict(type='RandomBrightnessContrast', p=0.5),#OpticalDistortion
+    dict(type='RandomBrightnessContrast', p=0.5),    
+    dict(type="OpticalDistortion",distort_limit=0.2,
+        border_mode=0,value=0,p=0.1),#0:cv2.BORDER_CONSTANT
     dict(type='GaussNoise', var_limit=(10.0, 40.0), p=0.3),
     dict(
         type='RGBShift',
@@ -136,7 +134,7 @@ data = dict(
     test=dict(
         type=dataset_type,
         classes=CLASSES,
-        img_dir='/data/chusai_release/testA/images2',
+        img_dir='/data/chusai_release/testA/images',
         img_suffix='.tif',
         seg_map_suffix='.png',
         k_fold_use=False,

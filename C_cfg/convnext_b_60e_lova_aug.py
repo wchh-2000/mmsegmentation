@@ -49,8 +49,14 @@ albumentations = [#改过
         shift_limit=0.2,
         scale_limit=0.2,
         rotate_limit=20,
+        # shift_limit=0,#lower and upper bounds should lie in range [0, 1] 与random crop功能重复
+        # scale_limit=0,#(1-scale_limit, 1+scale_limit) 与resize ratio range功能重复
+        # rotate_limit=45,
+        # border_mode=0,value=0,
         p=0.5),
-    dict(type='RandomBrightnessContrast', p=0.5),#OpticalDistortion
+    dict(type='RandomBrightnessContrast', p=0.5),
+    dict(type="OpticalDistortion",distort_limit=0.2,
+        border_mode=0,value=0,p=0.1),#0:cv2.BORDER_CONSTANT
     dict(type='GaussNoise', var_limit=(10.0, 40.0), p=0.3),
     dict(
         type='RGBShift',
@@ -63,7 +69,7 @@ albumentations = [#改过
         transforms=[
             dict(type='Blur', blur_limit=3, p=1.0),
             dict(type='MedianBlur', blur_limit=3, p=1.0),
-            dict(type='GaussianBlur', blur_limit=7, p=1.0)
+            dict(type='GaussianBlur', blur_limit=7, p=1.0)#(3, 7)
         ],
         p=0.1)
 ]
@@ -76,6 +82,7 @@ train_pipeline = [
     dict(type='Albu', transforms=albumentations),
     dict(type='RandomFlip', prob=0.5, direction='horizontal'),
     dict(type='RandomFlip', prob=0.5, direction='vertical'),
+    #dict(type='RandomRotate', prob=0.5, degree=45),#替代ShiftScaleRotate
     dict(type='PhotoMetricDistortion'),
     dict(
         type='Normalize',
@@ -132,20 +139,11 @@ data = dict(
     test=dict(
         type=dataset_type,
         classes=CLASSES,
-        img_dir='/data/chusai_release/train/images',
-        ann_dir='/data/chusai_release/train/labels_9',
+        img_dir='/data/chusai_release/testA/images',
         img_suffix='.tif',
         seg_map_suffix='.png',
         k_fold_use=False,
         pipeline=test_pipeline))
-    # dict(
-    #     type=dataset_type,
-    #     classes=CLASSES,
-    #     img_dir='/data/chusai_release/testA/images',
-    #     img_suffix='.tif',
-    #     seg_map_suffix='.png',
-    #     k_fold_use=False,
-    #     pipeline=test_pipeline))
 log_config = dict(
     interval=50, hooks=[dict(type='TextLoggerHook', by_epoch=False)])
 dist_params = dict(backend='nccl')
