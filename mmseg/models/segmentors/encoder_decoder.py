@@ -283,7 +283,14 @@ class EncoderDecoder(BaseSegmentor):
             cur_seg_logit = self.inference(imgs[i], img_metas[i], rescale)
             seg_logit += cur_seg_logit
         seg_logit /= len(imgs)
-        seg_pred = seg_logit.argmax(dim=1)
+        try:
+            from ...utils import use_integrate
+        except Exception as e:
+            use_integrate = False
+        if not use_integrate:
+            seg_pred = seg_logit.argmax(dim=1)
+        else:
+            seg_pred = nn.Softmax(dim=1)(seg_logit)
         seg_pred = seg_pred.cpu().numpy()
         # unravel batch dim
         seg_pred = list(seg_pred)
