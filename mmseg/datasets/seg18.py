@@ -10,23 +10,23 @@ from .custom import CustomDataset
 
 
 @DATASETS.register_module()
-class Seg8Dataset(CustomDataset):
+class Seg18Dataset(CustomDataset):
     """
     In segmentation map annotation for LoveDA, 0 is the ignore index.
     ``reduce_zero_label`` should be set to True. The ``img_suffix`` and
     ``seg_map_suffix`` are both fixed to '.png'.
     """
-    CLASSES = ('background', 'water','transport', 'building','agricultural','grass', 'forest','barren','others'
-               )
-
-    PALETTE = [[0, 60, 100], [255, 255, 255], [255, 0, 0], [255, 255, 0], [0, 0, 255],
-               [159, 129, 183], [0, 255, 0], [255, 195, 128], [0, 0, 0]]
+    CLASSES = ['Background','Waters', 'Road', 'Construction', 'Airport', 'Railway Station',
+    'Photovoltaic panels', 'Parking Lot', 'Playground','Farmland', 'Greenhouse', 'Grass',
+    'Artificial grass', 'Forest', 'Artificial forest', 'Bare soil', 'Artificial bare soil', 'Other']
+    PALETTE = [[128, 64, 128], [244, 35, 232], [70, 70, 70], [102, 102, 156],
+            [190, 153, 153], [153, 153, 153], [250, 170, 30], [220, 220, 0],
+            [107, 142, 35], [152, 251, 152], [70, 130, 180], [220, 20, 60],
+            [255, 0, 0], [0, 0, 142], [0, 0, 70], [0, 60, 100], [0, 80, 100],
+            [0, 0, 230]]
 
     def __init__(self, **kwargs):
-        super(Seg8Dataset, self).__init__(
-            img_suffix='.tif',
-            seg_map_suffix='.png',
-            reduce_zero_label=False,
+        super(Seg18Dataset, self).__init__(
             **kwargs)
 
     def results2img(self, results, imgfile_prefix, indices=None):
@@ -56,8 +56,9 @@ class Seg8Dataset(CustomDataset):
 
             png_filename = osp.join(imgfile_prefix, f'{basename}.png')
 
-            # The  index range of official requirement is from 0 to 6.
-            output = Image.fromarray(result.astype(np.uint8))
+            lut=np.array([0,1,2,3,2,2,8,8,8,4,4,5,5,6,6,7,7,8])
+            result=result+100*lut[result]#百位加上一级类别
+            output = Image.fromarray(result.astype(np.int32))
             output.save(png_filename)
             result_files.append(png_filename)
 

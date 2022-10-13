@@ -3,9 +3,9 @@ from operator import ipow
 from PIL import Image
 import numpy as np
 import tqdm
-
+import mmcv
 import glob
-img_paths = glob.glob('/data/chusai_release/testA/images/*.tif')
+img_paths = glob.glob('/data/fusai_release/test/images/*.tif')
 thre = int(512 * 512 * 0.02)
 
 #测试图片去除蓝色蒙版
@@ -31,7 +31,7 @@ def process(img_pth):
         ori[:, :, 1] = np.maximum(ori[:, :, 1].astype(np.int32) - (g_ - r_) / 4 * 3, 0).astype(np.uint8)
     ori = Image.fromarray(ori)
     ori.save(img_pth.replace('images', 'images2'))
-# # _ = mmcv.track_parallel_progress(process, img_paths[:20], 4)
+_ = mmcv.track_parallel_progress(process, img_paths, 8)
 # process(r"F:\Dataset\InternationalRaceTrackDataset\chusai_release\train\images\1666.tif")
-for i in tqdm.tqdm(img_paths):
-    process(i)
+# for i in tqdm.tqdm(img_paths):
+#     process(i)

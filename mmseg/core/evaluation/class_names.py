@@ -125,11 +125,16 @@ def stare_classes():
     """stare class names for external use."""
     return ['background', 'vessel']
 
-def seg8_classes():
-    return ['water','transport', 'building','agricultural','grass', 'forest','barren','others']
-def seg8_palette():
-    return [[255, 255, 255], [255, 0, 0], [255, 255, 0], [0, 0, 255],
-               [159, 129, 183], [0, 255, 0], [255, 195, 128],[0, 0, 0]]
+def seg18_classes():
+    return ['Background','Waters', 'Road', 'Construction', 'Airport', 'Railway Station',
+    'Photovoltaic panels', 'Parking Lot', 'Playground','Farmland', 'Greenhouse', 'Grass',
+    'Artificial grass', 'Forest', 'Artificial forest', 'Bare soil', 'Artificial bare soil', 'Other']
+def seg18_palette():
+    return [[128, 64, 128], [244, 35, 232], [70, 70, 70], [102, 102, 156],
+            [190, 153, 153], [153, 153, 153], [250, 170, 30], [220, 220, 0],
+            [107, 142, 35], [152, 251, 152], [70, 130, 180], [220, 20, 60],
+            [255, 0, 0], [0, 0, 142], [0, 0, 70], [0, 60, 100], [0, 80, 100],
+            [0, 0, 230]]
 def cityscapes_palette():
     """Cityscapes palette for external use."""
     return [[128, 64, 128], [244, 35, 232], [70, 70, 70], [102, 102, 156],
@@ -283,7 +288,7 @@ dataset_aliases = {
     ],
     'isaid': ['isaid', 'iSAID'],
     'stare': ['stare', 'STARE'],
-    'seg8':['seg8']
+    'seg18':['seg18']
 }
 
 

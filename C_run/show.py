@@ -42,7 +42,9 @@ def show_train(dir,fname,val=False,interval=50,showname=None):
         with jsonlines.open(dir+fname,'r') as f:
             for d in f:
                 if 'loss' not in d:
-                    continue
+                    continue                
+                # if d['loss']<0 or d['loss']>3:
+                #     continue
                 loss.append(d['loss'])
                 d_acc.append(d['decode.acc_seg'])
                 a_acc.append(d['aux.acc_seg'])
@@ -66,7 +68,7 @@ def show_train(dir,fname,val=False,interval=50,showname=None):
         plt.legend()
         plt.savefig(dir+'acc.png')
 
-show_train("/data/mmseg/C_work_dirs/convnext_l_lova_aug/","20220921_161638.log.json",val=False \
+show_train("/data/mmseg/C_work_dirs/convnext_s/","20221011_172357.log.json",val=False \
     ,interval=50)#,showname="decode.loss_lova")
 def compare(dir,f1,f2,interval=50):
     acc0=[]
