@@ -21,7 +21,9 @@ model = dict(
         norm_cfg=dict(type='SyncBN', requires_grad=True),
         align_corners=False,
         loss_decode=[
-            dict(type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1)]
+            dict(type='CrossEntropyLoss', use_sigmoid=False, loss_weight=0.5),            
+            dict(type='LovaszLoss', loss_name='loss_lova',
+            reduction='none', loss_weight=0.5)]
         ),
     auxiliary_head=dict(
         type='FCNHead',
@@ -41,13 +43,7 @@ model = dict(
 
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
-albumentations = [
-    dict(
-        type='ShiftScaleRotate',
-        shift_limit=0.2,
-        scale_limit=0.2,
-        rotate_limit=40,
-        p=0.5),
+albumentations = [#比较去掉ShiftScaleRotate的data_time 精度
     dict(type='RandomBrightnessContrast', p=0.5),
     dict(type='GaussNoise', p=0.3),
     dict(
@@ -80,6 +76,7 @@ train_pipeline = [
     dict(type='Albu', transforms=albumentations),
     dict(type='RandomFlip', prob=0.5, direction='horizontal'),
     dict(type='RandomFlip', prob=0.5, direction='vertical'),
+    dict(type='RandomRotate', prob=0.5, degree=45),#替代ShiftScaleRotate
     dict(type='PhotoMetricDistortion'),
     dict(
         type='Normalize',
@@ -95,8 +92,9 @@ test_pipeline = [
     dict(
         type='MultiScaleFlipAug',
         img_scale=(512, 512),
-        img_ratios=[0.75,1.0,1.25,1.5,1.75,2.0],
+        img_ratios=[0.75,1.0,1.5,2.0,2.5,3.0],#[0.75,1.0,1.25,1.5,1.75,2.0]
         flip=True,
+        # flip_direction=['horizontal', 'vertical'],
         transforms=[
             dict(type='Resize', keep_ratio=True),
             dict(type='RandomFlip'),
@@ -114,8 +112,8 @@ dataset_type = 'Seg18Dataset'
 CLASSES = ['Background','Waters', 'Road', 'Construction', 'Airport', 'Railway Station', 'Photovoltaic panels', 'Parking Lot', 'Playground',
            'Farmland', 'Greenhouse', 'Grass', 'Artificial grass', 'Forest', 'Artificial forest', 'Bare soil', 'Artificial bare soil', 'Other']
 data = dict(
-    samples_per_gpu=6,#12
-    workers_per_gpu=6,
+    samples_per_gpu=2,#12
+    workers_per_gpu=2,
     train=dict(
         type=dataset_type,
         classes=CLASSES,
@@ -123,17 +121,9 @@ data = dict(
         ann_dir='/data/fusai_release/train/labels_18',
         img_suffix='.tif',
         seg_map_suffix='.png',
+        split='/data/mmseg/C_run/train.txt',
         k_fold_use=False,
         pipeline=train_pipeline),
-    val=dict(
-        type=dataset_type,
-        classes=CLASSES,
-        img_dir='/data/fusai_release/train/images',
-        ann_dir='/data/fusai_release/train/labels_18',
-        img_suffix='.tif',
-        seg_map_suffix='.png',
-        k_fold_use=False,
-        pipeline=test_pipeline),
     test=dict(
         type=dataset_type,
         classes=CLASSES,
@@ -152,7 +142,7 @@ workflow = [('train', 1)]
 cudnn_benchmark = True
 optimizer = dict(
     type='AdamW',
-    lr=2e-4,#2e-4
+    lr=1e-4,#2e-4
     betas=(0.9, 0.999),
     weight_decay=0.01,
     paramwise_cfg=dict(
@@ -171,10 +161,12 @@ lr_config = dict(
     min_lr=1e-6,
     by_epoch=False)
 # runner = dict(type='IterBasedRunner', max_iters=40000)
-runner = dict(type='EpochBasedRunner', max_epochs=60)
+runner = dict(type='EpochBasedRunner', max_epochs=30)
+# optimizer_config = dict()
+# optimizer_config = dict(grad_clip=dict(max_norm=1, norm_type=2))
 optimizer_config = dict(type='Fp16OptimizerHook', loss_scale=512.)
 # fp16 placeholder
 fp16 = dict()
 # checkpoint_config = dict(by_epoch=False, interval=40000)
-checkpoint_config = dict(by_epoch=True, interval=20)
-evaluation = dict(interval=60, metric='mIoU', pre_eval=True)
+checkpoint_config = dict(by_epoch=True, interval=10,max_keep_ckpts=2)
+# evaluation = dict(interval=60, metric='mIoU', pre_eval=True)
