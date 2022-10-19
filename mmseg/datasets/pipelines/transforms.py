@@ -460,10 +460,11 @@ class Normalize(object):
             default is true.
     """
 
-    def __init__(self, mean, std, to_rgb=True):
+    def __init__(self, mean, std, to_rgb=True,norm_per_pic=False):
         self.mean = np.array(mean, dtype=np.float32)
         self.std = np.array(std, dtype=np.float32)
         self.to_rgb = to_rgb
+        self.norm_per_pic=norm_per_pic
 
     def __call__(self, results):
         """Call function to normalize images.
@@ -475,7 +476,16 @@ class Normalize(object):
             dict: Normalized results, 'img_norm_cfg' key is added into
                 result dict.
         """
-
+        # mean = np.mean(results['img'], axis=(0, 1))#img shape (h,w,c)
+        # std = np.std(results['img'], axis=(0, 1))
+        # if self.to_rgb:#原始图像bgr
+        #     mean[0],mean[2]=mean[2],mean[0]
+        #     std[0],std[2]=std[2],std[0]
+        # self.mean,self.std=mean,std
+        if self.norm_per_pic:
+        # self.mean,self.std=results['img_norm_cfg']['mean'],results['img_norm_cfg']['std']
+            t=results['normalize_para']#[results['img_info']['filename']]
+            self.mean,self.std=t[0],t[1]        
         results['img'] = mmcv.imnormalize(results['img'], self.mean, self.std,
                                           self.to_rgb)
         results['img_norm_cfg'] = dict(

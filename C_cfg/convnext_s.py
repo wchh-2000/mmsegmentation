@@ -53,12 +53,6 @@ albumentations = [#比较去掉ShiftScaleRotate的data_time 精度
         val_shift_limit=30,
         p=0.3),
     dict(
-        type='RGBShift',
-        r_shift_limit=20,
-        g_shift_limit=20,
-        b_shift_limit=20,
-        p=0.3),
-    dict(
         type='OneOf',
         transforms=[
             dict(type='Blur', blur_limit=3, p=1.0),
@@ -82,7 +76,7 @@ train_pipeline = [
         type='Normalize',
         mean=[123.675, 116.28, 103.53],
         std=[58.395, 57.12, 57.375],
-        to_rgb=True),
+        to_rgb=True,norm_per_pic=True),
     dict(type='Pad', size=(size, size), pad_val=0, seg_pad_val=255),
     dict(type='DefaultFormatBundle'),
     dict(type='Collect', keys=['img', 'gt_semantic_seg'])
@@ -102,7 +96,7 @@ test_pipeline = [
                 type='Normalize',
                 mean=[123.675, 116.28, 103.53],
                 std=[58.395, 57.12, 57.375],
-                to_rgb=True),
+                to_rgb=True,norm_per_pic=True),
             dict(type='ImageToTensor', keys=['img']),
             dict(type='Collect', keys=['img'])
         ])
@@ -112,8 +106,8 @@ dataset_type = 'Seg18Dataset'
 CLASSES = ['Background','Waters', 'Road', 'Construction', 'Airport', 'Railway Station', 'Photovoltaic panels', 'Parking Lot', 'Playground',
            'Farmland', 'Greenhouse', 'Grass', 'Artificial grass', 'Forest', 'Artificial forest', 'Bare soil', 'Artificial bare soil', 'Other']
 data = dict(
-    samples_per_gpu=2,#12
-    workers_per_gpu=2,
+    samples_per_gpu=3,#12
+    workers_per_gpu=3,
     train=dict(
         type=dataset_type,
         classes=CLASSES,
@@ -121,7 +115,8 @@ data = dict(
         ann_dir='/data/fusai_release/train/labels_18',
         img_suffix='.tif',
         seg_map_suffix='.png',
-        split='/data/mmseg/C_run/train.txt',
+        # split='/data/mmseg/C_run/train.txt',
+        load_mean_std=True,
         k_fold_use=False,
         pipeline=train_pipeline),
     test=dict(
@@ -130,6 +125,7 @@ data = dict(
         img_dir='/data/fusai_release/test/images2',
         img_suffix='.tif',
         seg_map_suffix='.png',
+        load_mean_std=True,
         k_fold_use=False,
         pipeline=test_pipeline))
 log_config = dict(
@@ -142,7 +138,7 @@ workflow = [('train', 1)]
 cudnn_benchmark = True
 optimizer = dict(
     type='AdamW',
-    lr=1e-4,#2e-4
+    lr=2e-4,#2e-4
     betas=(0.9, 0.999),
     weight_decay=0.01,
     paramwise_cfg=dict(
@@ -161,12 +157,12 @@ lr_config = dict(
     min_lr=1e-6,
     by_epoch=False)
 # runner = dict(type='IterBasedRunner', max_iters=40000)
-runner = dict(type='EpochBasedRunner', max_epochs=30)
+runner = dict(type='EpochBasedRunner', max_epochs=40)
 # optimizer_config = dict()
 # optimizer_config = dict(grad_clip=dict(max_norm=1, norm_type=2))
 optimizer_config = dict(type='Fp16OptimizerHook', loss_scale=512.)
 # fp16 placeholder
 fp16 = dict()
 # checkpoint_config = dict(by_epoch=False, interval=40000)
-checkpoint_config = dict(by_epoch=True, interval=10,max_keep_ckpts=2)
+checkpoint_config = dict(by_epoch=True, interval=10,max_keep_ckpts=3)
 # evaluation = dict(interval=60, metric='mIoU', pre_eval=True)

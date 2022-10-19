@@ -25,10 +25,54 @@ class Seg18Dataset(CustomDataset):
             [255, 0, 0], [0, 0, 142], [0, 0, 70], [0, 60, 100], [0, 80, 100],
             [0, 0, 230]]
 
-    def __init__(self, **kwargs):
+    def __init__(self,cal_mean_std=False,load_mean_std=False, **kwargs):
         super(Seg18Dataset, self).__init__(
             **kwargs)
+        self.cal_mean_std=cal_mean_std
+        self.load_mean_std=load_mean_std
+        if cal_mean_std:
+            self.normalize_para = {}
+            fileClient = mmcv.FileClient(backend='disk')
+            Mean=np.zeros((len(self.img_infos),3))
+            Std=np.zeros((len(self.img_infos),3))
+            for i,dic in enumerate(self.img_infos):
+                filepth = osp.join(self.img_dir, dic['filename'])
+                img_bytes = fileClient.get(filepth)
+                img = mmcv.imfrombytes(img_bytes, flag='color', backend='cv2')
+                mean,std=np.mean(img, axis=(0, 1)), np.std(img, axis=(0, 1))
+                mean[0],mean[2]=mean[2],mean[0]#bgr转rgb
+                std[0],std[2]=std[2],std[0]
+                Mean[i,:]=mean
+                Std[i,:]=std
+                self.normalize_para[dic['filename']] = [mean,std]
+            if self.test_mode:
+                w='test'
+            else:
+                w='train'
+            np.savez(f'/data/mmseg/C_data/mean_std_{w}.npz',Mean,Std)
+            print("="*5+"calculate mean std done"+"="*5)
+        if load_mean_std:
+            self.normalize_para = {}
+            if self.test_mode:
+                w='test'
+            else:
+                w='train'
+            t=np.load(f'/data/mmseg/C_data/mean_std_{w}.npz')
+            Mean,Std=t['arr_0'],t['arr_1']
+            for i,dic in enumerate(self.img_infos):
+                self.normalize_para[dic['filename']] = [Mean[i],Std[i]]
+            print("="*5+"load mean std done"+"="*5)
 
+    def pre_pipeline(self, results):
+        """Prepare results dict for pipeline."""
+        results['seg_fields'] = []
+        results['img_prefix'] = self.img_dir
+        results['seg_prefix'] = self.ann_dir
+        if self.cal_mean_std or self.load_mean_std:
+            results['normalize_para'] = self.normalize_para[results['img_info']['filename']]#优化
+        if self.custom_classes:
+            results['label_map'] = self.label_map
+    
     def results2img(self, results, imgfile_prefix, indices=None):
         """Write the segmentation results to images.
 
