@@ -5,9 +5,9 @@ cd /data/mmseg/C_run
 #  --format-only --eval-options "imgfile_prefix=./results" > test.log &
 # --show-dir test_visualization --eval "mIoU" 
 
-nohup python ../tools/test.py ../C_cfg/convnext_s_60e.py \
- ../C_work_dirs/convnext_s/latest.pth --gpu-id 0 \
- --format-only --eval-options "imgfile_prefix=./results" > test.log &
+nohup python ../tools/test.py ../C_cfg/convnext_test.py \
+ ../C_work_dirs/conv_s_lova_norm_30e/latest.pth --gpu-id 0 \
+ --show-dir /data/fusai_release/visual_train > test.log &
 
 
 #  nohup python ../tools/test_inte.py /data/mmseg/C_cfg/integrate_test_cfg.py \
