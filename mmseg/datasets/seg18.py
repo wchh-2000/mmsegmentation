@@ -19,11 +19,9 @@ class Seg18Dataset(CustomDataset):
     CLASSES = ['Background','Waters', 'Road', 'Construction', 'Airport', 'Railway Station',
     'Photovoltaic panels', 'Parking Lot', 'Playground','Farmland', 'Greenhouse', 'Grass',
     'Artificial grass', 'Forest', 'Artificial forest', 'Bare soil', 'Artificial bare soil', 'Other']
-    PALETTE = [[128, 64, 128], [244, 35, 232], [70, 70, 70], [102, 102, 156],
-            [190, 153, 153], [153, 153, 153], [250, 170, 30], [220, 220, 0],
-            [107, 142, 35], [152, 251, 152], [70, 130, 180], [220, 20, 60],
-            [255, 0, 0], [0, 0, 142], [0, 0, 70], [0, 60, 100], [0, 80, 100],
-            [0, 0, 230]]
+    PALETTE = [[0,0,0], [0,0,255], [128,128,128], [255,127,131],[192,192,192], [255,255,255],
+     [79,100,118], [70,70,70],[255,73,73], [255,255,0], [60,177,246], [137,35,245],
+            [205,133,250], [0,114,8], [102,216,103], [128,64,3], [255,128,0],[255,51,205]]
 
     def __init__(self,cal_mean_std=False,load_mean_std=False, **kwargs):
         super(Seg18Dataset, self).__init__(
